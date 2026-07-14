@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống Mô phỏng Tra cứu Hóa đơn Điện tử - Tổng cục Thuế</title>
+    <style>
+        :root {
+            --primary-color: #a80000;
+            --secondary-color: #d32f2f;
+            --dark-color: #333;
+            --light-bg: #f5f5f5;
+            --admin-color: #0288d1;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-bg);
+            color: var(--dark-color);
+        }
+
+        /* Header mô phỏng ngành Thuế */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 4px solid #ffb300;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .logo-placeholder {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 24px;
+            margin-right: 15px;
+        }
+
+        .header-text h1 {
+            margin: 0;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header-text p {
+            margin: 5px 0 0 0;
+            font-size: 13px;
+            color: #ffccbc;
+        }
+
+        /* Nút quản lý của Giảng viên */
+        .btn-admin-trigger {
+            position: absolute;
+            right: 20px;
+            top: 25px;
+            background-color: #ffb300;
+            color: #333;
+            border: none;
+            padding: 8px 15px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-admin-trigger:hover {
+            background-color: #ffa000;
+        }
+
+        /* Khung chứa chính */
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .instruction-box {
+            background-color: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            padding: 12px;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        /* PHÂN HỆ QUẢN LÝ CỦA GIẢNG VIÊN (ẨN MẶC ĐỊNH) */
+        .admin-section {
+            display: none;
+            border: 2px dashed var(--admin-color);
+            border-radius: 4px;
+            padding: 20px;
+            background: #e1f5fe;
+            margin-bottom: 30px;
+        }
+
+        .admin-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--admin-color);
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* Form tra cứu sinh viên */
+        .search-section {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .search-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .form-group {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .form-group-admin {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+
+        .form-group-admin label {
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input[type="text"], textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 40px;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+        }
+
+        .admin-section input:focus, .admin-section textarea:focus {
+            border-color: var(--admin-color);
+        }
+
+        .required::after {
+            content: " *";
+            color: red;
+        }
+
+        .btn-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        button {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-color);
+        }
+
+        .btn-admin-save {
+            background-color: var(--admin-color);
+            grid-column: span 2;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        .btn-admin-save:hover {
+            background-color: #0277bd;
+        }
+
+        /* Vùng kết quả hiển thị hóa đơn */
+        .result-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .result-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f1f1f1;
+            font-weight: bold;
+            color: #333;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .btn-download {
+            background-color: #2e7d32;
+            color: white;
+            padding: 6px 12px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 13px;
+            display: inline-block;
+        }
+
+        .btn-download:hover {
+            background-color: #1b5e20;
+        }
+
+        .error-message {
+            color: red;
+            font-weight: bold;
+            margin-top: 15px;
+            display: none;
+            text-align: center;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .success-toast {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: none;
+            text-align: center;
+            border: 1px solid #a5d6a7;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-placeholder">TCT</div>
+        <div class="header-text">
+            <h1>TỔNG CỤC THUẾ - BỘ TÀI CHÍNH</h1>
+            <p>Hệ thống Mô phỏng Tra cứu & Tải hóa đơn điện tử phục vụ Giảng dạy</p>
+        </div>
+        <button class="btn-admin-trigger" onclick="xacThucGiangVien()">⚙ Khóa học / Cấu hình</button>
+    </header>
+
+    <div class="container">
+        
+        <div id="admin-panel" class="admin-section">
+            <div class="admin-title">
+                <span>Cửa sổ quản lý dành cho Giảng Viên</span>
+                <button type="button" style="background:#555; padding: 2px 8px; font-size:11px;" onclick="dongBangQuanLy()">Đóng [X]</button>
+            </div>
+            
+            <div id="admin-success" class="success-toast">Cập nhật cơ sở dữ liệu hóa đơn thành công!</div>
+
+            <div class="admin-grid">
+                <div class="form-group-admin">
+                    <label class="required"><strong>Mã số thuế doanh nghiệp:</strong></label>
+                    <input type="text" id="adm-mst" placeholder="Ví dụ: 0101234567">
+                </div>
+                <div class="form-group-admin">
+                    <label class="required"><strong>Tên doanh nghiệp:</strong></label>
+                    <input type="text" id="adm-ten" placeholder="Ví dụ: Công ty TNHH Dịch vụ Kế toán Minh Đức">
+                </div>
+                <div class="form-group-admin" style="grid-column: span 2;">
+                    <label class="required"><strong>Mô tả bộ hóa đơn giảng dạy:</strong></label>
+                    <textarea id="adm-mo-ta" placeholder="Ví dụ: Bộ hóa đơn Mua vào - Bán ra Tháng 01 dùng cho bài tập thực hành số 2"></textarea>
+                </div>
+                <div class="form-group-admin" style="grid-column: span 2;">
+                    <label class="required"><strong>Đường dẫn Google Drive (Quyền: Bất kỳ ai có liên kết đều xem được):</strong></label>
+                    <input type="text" id="adm-link" placeholder="https://drive.google.com/drive/folders/...">
+                </div>
+                
+                <button type="button" class="btn-admin-save" onclick="giangVienLuuData()">Lưu dữ liệu hóa đơn vào hệ thống</button>
+            </div>
+        </div>
+
+        <div class="instruction-box">
+            <strong>Hướng dẫn dành cho Sinh viên:</strong> Nhập chính xác <strong>Mã số thuế</strong> của doanh nghiệp được giao trong bài tập để hệ thống kết nối dữ liệu và tải bộ hóa đơn tương ứng.
+        </div>
+
+        <div class="search-section">
+            <div class="search-title">Tra cứu hóa đơn điện tử</div>
+            
+            <div class="form-group">
+                <label for="mst-input" class="required">Mã số thuế doanh nghiệp</label>
+                <input type="text" id="mst-input" placeholder="Ví dụ: 0101234567" autocomplete="off">
+            </div>
+            
+            <div class="btn-container">
+                <button type="button" onclick="traCuuHoaDon()">Tìm kiếm & Tải về</button>
+            </div>
+        </div>
+
+        <div id="error-box" class="error-message">
+            Không tìm thấy dữ liệu hóa đơn cho Mã số thuế này. Vui lòng kiểm tra lại hoặc liên hệ Giảng viên!
+        </div>
+
+        <div id="result-box" class="result-section">
+            <div class="result-title">✓ KẾT QUẢ TÌM KIẾM HỢP LỆ</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Tên doanh nghiệp</th>
+                        <th style="width: 20%;">Mã số thuế</th>
+                        <th style="width: 35%;">Mô tả bộ hóa đơn giảng dạy</th>
+                        <th style="width: 20%; text-align: center;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td id="res-ten-dn">Công ty A</td>
+                        <td id="res-mst">0101234567</td>
+                        <td id="res-mo-ta">Bộ hóa đơn Mua vào - Bán ra Tháng 01</td>
+                        <td style="text-align: center;">
+                            <a id="res-link" href="#" target="_blank" class="btn-download">Tải Bộ Hóa Đơn</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        <p>© Bản quyền mô phỏng học tập - Phát triển bởi GV Nguyễn Khánh Dương - email: nguyenkhanhduong0111@gmail.com</p>
+    </footer>
+
+    <script>
+        // Dữ liệu ban đầu mặc định làm mẫu (Nếu chưa có dữ liệu cấu hình mới)
+        const DỮ_LIỆU_MẪU = {
+            "0101234567": {
+                tenDoanhNghiep: "Công ty Cổ phần Thương mại & Dịch vụ ABC",
+                moTa: "Bộ 15 hóa đơn Mua vào - Bán ra (Quý 1) - Thực hành Kê khai Thuế",
+                linkGoogleDrive: "https://drive.google.com/"
+            }
+        };
+
+        // Hàm khởi tạo: Lấy dữ liệu giảng viên đã lưu từ LocalStorage, nếu trống thì lấy dữ liệu mẫu
+        function layDatabase() {
+            const dataSaved = localStorage.getItem("DATABASE_HOA_DON_GV");
+            if (dataSaved) {
+                return JSON.parse(dataSaved);
+            }
+            return DỮ_LIỆU_MẪU;
+        }
+
+        // 1. CHỨC NĂNG XÁC THỰC GIẢNG VIÊN (BẤM NÚT MÃ NHẬP PASS)
+        function xacThucGiangVien() {
+            const matKhau = prompt("Vui lòng nhập mật khẩu dành cho Giảng viên để cấu hình:");
+            
+            if (matKhau === "DUONG") {
+                document.getElementById("admin-panel").style.display = "block";
+                document.getElementById("adm-mst").focus();
+            } else if (matKhau !== null) {
+                alert("Mật khẩu không chính xác! Vui lòng thử lại.");
+            }
+        }
+
+        function dongBangQuanLy() {
+            document.getElementById("admin-panel").style.display = "none";
+        }
+
+        // 2. CHỨC NĂNG GIẢNG VIÊN GHI TRỰC TIẾP DỮ LIỆU TỪ GIAO DIỆN
+        function giangVienLuuData() {
+            const mst = document.getElementById("adm-mst").value.trim();
+            const ten = document.getElementById("adm-ten").value.trim();
+            const moTa = document.getElementById("adm-mo-ta").value.trim();
+            const link = document.getElementById("adm-link").value.trim();
+
+            // Kiểm tra tính hợp lệ dữ liệu nhập
+            if (!mst || !ten || !moTa || !link) {
+                alert("Vui lòng nhập đầy đủ tất cả các trường dữ liệu!");
+                return;
+            }
+
+            // Lấy db hiện tại ra, cập nhật hoặc thêm mới bản ghi MST
+            let currentDB = layDatabase();
+            currentDB[mst] = {
+                tenDoanhNghiep: ten,
+                moTa: moTa,
+                linkGoogleDrive: link
+            };
+
+            // Lưu ngược lại vào bộ nhớ LocalStorage của trình duyệt
+            localStorage.setItem("DATABASE_HOA_DON_GV", JSON.stringify(currentDB));
+
+            // Hiển thị thông báo thành công và xóa trắng ô input để nhập tiếp công ty khác nếu muốn
+            const toast = document.getElementById("admin-success");
+            toast.style.display = "block";
+            setTimeout(() => { toast.style.display = "none"; }, 3000);
+
+            document.getElementById("adm-mst").value = "";
+            document.getElementById("adm-ten").value = "";
+            document.getElementById("adm-mo-ta").value = "";
+            document.getElementById("adm-link").value = "";
+        }
+
+        // 3. CHỨC NĂNG TRA CỨU HÓA ĐƠN CỦA SINH VIÊN (GIỮ NGUYÊN 100% LOGIC CŨ)
+        function traCuuHoaDon() {
+            const mstNhap = document.getElementById("mst-input").value.trim();
+            const errorBox = document.getElementById("error-box");
+            const resultBox = document.getElementById("result-box");
+
+            if (mstNhap === "") {
+                alert("Vui lòng nhập Mã số thuế trước khi tìm kiếm!");
+                return;
+            }
+
+            // Lấy dữ liệu mới nhất (gồm cả dữ liệu giảng viên vừa nhập trực tiếp)
+            const dbHienTai = layDatabase();
+
+            if (dbHienTai.hasOwnProperty(mstNhap)) {
+                const data = dbHienTai[mstNhap];
+
+                document.getElementById("res-ten-dn").innerText = data.tenDoanhNghiep;
+                document.getElementById("res-mst").innerText = mstNhap;
+                document.getElementById("res-mo-ta").innerText = data.moTa;
+                
+                const downloadLink = document.getElementById("res-link");
+                downloadLink.href = data.linkGoogleDrive;
+
+                resultBox.style.display = "block";
+                errorBox.style.display = "none";
+            } else {
+                resultBox.style.display = "none";
+                errorBox.style.display = "block";
+            }
+        }
+        
+        // Hỗ trợ nhấn Enter trong ô tìm kiếm sinh viên
+        document.getElementById("mst-input").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                traCuuHoaDon();
+            }
+        });
+    </script>
+</body>
+</html>
