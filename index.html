@@ -451,20 +451,73 @@
     </footer>
 
     <script>
-        // Dữ liệu ban đầu mặc định làm mẫu (Nếu chưa có dữ liệu cấu hình mới trong LocalStorage)
+        // Dữ liệu ban đầu mặc định đã được cập nhật theo danh sách 10 doanh nghiệp yêu cầu
         const DỮ_LIỆU_MẪU = {
-            "0101234567": {
-                tenDoanhNghiep: "Công ty Cổ phần Thương mại & Dịch vụ ABC",
-                moTa: "Bộ 15 hóa đơn Mua vào - Bán ra (Quý 1) - Thực hành Kê khai Thuế",
-                linkGoogleDrive: "https://drive.google.com/"
+            "0310031625": {
+                tenDoanhNghiep: "Công ty Cổ phần thương mại Gia Định",
+                moTa: "BỘ HOÁ ĐƠN GTGT",
+                linkGoogleDrive: "https://drive.google.com/drive/folders/1FrhSraJQJM8zVBBW4Mc8zxgdfiHbJXHO?usp=sharing"
+            },
+            "0312274302": {
+                tenDoanhNghiep: "Công ty TNHH Minh Khang",
+                moTa: "BỘ HOÁ ĐƠN GTGT",
+                linkGoogleDrive: "https://drive.google.com/drive/folders/12y1eQPbyKpWdbucbr_grKpGMXsvwxUC_?usp=sharing"
+            },
+            "0302840238": {
+                tenDoanhNghiep: "Công ty TNHH Xây dựng Trường Giang",
+                moTa: "BỘ HOÁ ĐƠN GTGT",
+                linkGoogleDrive: "https://drive.google.com/drive/folders/1kXMEeis7ENcroJUvJOF_TUTiH6z51MrB?usp=sharing"
+            },
+            "0312217216": {
+                tenDoanhNghiep: "Công ty TNHH SX TM Huê Phát",
+                moTa: "BỘ HOÁ ĐƠN GTGT",
+                linkGoogleDrive: "https://drive.google.com/drive/folders/1rTLY-a6XKBoLb1nWDB3xQw24_aaSe4HV?usp=sharing"
+            },
+            "0312177066": {
+                tenDoanhNghiep: "Công ty TNHH Nam Phát",
+                moTa: "BỘ HOÁ ĐƠN GTGT",
+                linkGoogleDrive: "https://drive.google.com/drive/folders/1K7muIWvvUSq2-zhF5U-lspeLUfOM8_FK?usp=sharing"
+            },
+            "0312566055": {
+                tenDoanhNghiep: "Công ty TNHH Nam Long",
+                moTa: "BỘ HOÁ ĐƠN GTGT",
+                linkGoogleDrive: "https://drive.google.com/drive/folders/1Y4GDq2b7jfHMOxcGy4A-M58vPSBbmw4O?usp=sharing"
+            },
+            "0315984879": {
+                tenDoanhNghiep: "Công ty TNHH Vương Minh Phú",
+                moTa: "BỘ HOÁ ĐƠN GTGT",
+                linkGoogleDrive: "https://drive.google.com/drive/folders/1_nsVe-3tYZ7DyuuxiFyarMtoGyCb6wKG?usp=sharing"
+            },
+            "0312236177": {
+                tenDoanhNghiep: "Công ty TNHH Toàn Gia Phú",
+                moTa: "BỘ HOÁ ĐƠN GTGT",
+                linkGoogleDrive: "https://drive.google.com/drive/folders/1-OpeiRN1pt21ZmqqlLxB8fPz0pw0n6IN?usp=sharing"
+            },
+            "0312236122": {
+                tenDoanhNghiep: "Công ty TNHH Vinh Phát",
+                moTa: "BỘ HOÁ ĐƠN GTGT",
+                linkGoogleDrive: "https://drive.google.com/drive/folders/1HNDmrJbQ3a9-4MOLJ-j0KPlXe2ZfgAha?usp=sharing"
+            },
+            "0319917558": {
+                tenDoanhNghiep: "Công ty TNHH Hà Huy",
+                moTa: "BỘ HOÁ ĐƠN GTGT",
+                linkGoogleDrive: "https://drive.google.com/drive/folders/1pbek902NNLCZ9HzmAV0QCMJEGLYFoeAL?usp=sharing"
             }
         };
 
-        // Hàm khởi tạo: Lấy dữ liệu giảng viên đã lưu từ LocalStorage, nếu trống thì khởi tạo bằng DỮ_LIỆU_MẪU và ghi ngược vào LocalStorage để lưu vĩnh viễn
+        // Hàm khởi tạo: Lấy dữ liệu từ LocalStorage. Nếu chưa có hoặc muốn ghi đè bộ dữ liệu mẫu mới, chúng ta sẽ ưu tiên lưu bộ 10 DN mới.
         function layDatabase() {
             const dataSaved = localStorage.getItem("DATABASE_HOA_DON_GV");
             if (dataSaved) {
-                return JSON.parse(dataSaved);
+                const parsed = JSON.parse(dataSaved);
+                // Kiểm tra xem dữ liệu đã có ít nhất một trong các MST mới chưa, nếu chưa có thì merge để tránh mất dữ liệu tự thêm của GV
+                let holdsNewData = Object.keys(DỮ_LIỆU_MẪU).every(key => parsed.hasOwnProperty(key));
+                if (!holdsNewData) {
+                    const mergedData = Object.assign({}, DỮ_LIỆU_MẪU, parsed);
+                    localStorage.setItem("DATABASE_HOA_DON_GV", JSON.stringify(mergedData));
+                    return mergedData;
+                }
+                return parsed;
             }
             // Thiết lập giá trị ban đầu nếu trình duyệt chưa từng lưu gì
             localStorage.setItem("DATABASE_HOA_DON_GV", JSON.stringify(DỮ_LIỆU_MẪU));
