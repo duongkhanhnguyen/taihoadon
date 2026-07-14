@@ -97,7 +97,7 @@
             font-size: 14px;
         }
 
-        /* PHÂN HỆ QUẢN LÝ CỦA GIẢNG VIÊN (ẨN MẶC ĐỊNH) */
+        /* PHÂN HỆ QUẢN LÝ CỦA GIẢNG VIÊN */
         .admin-section {
             display: none;
             border: 2px dashed var(--admin-color);
@@ -116,12 +116,43 @@
             text-transform: uppercase;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
 
         .admin-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        /* Danh sách quản lý hóa đơn của GV */
+        .admin-list-section {
+            margin-top: 20px;
+            border-top: 1px solid #b3e5fc;
+            padding-top: 20px;
+        }
+
+        .admin-list-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #01579b;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .btn-delete {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-delete:hover {
+            background-color: #c62828;
         }
 
         /* Form tra cứu sinh viên */
@@ -349,6 +380,24 @@
                 
                 <button type="button" class="btn-admin-save" onclick="giangVienLuuData()">Lưu dữ liệu hóa đơn vào hệ thống</button>
             </div>
+
+            <div class="admin-list-section">
+                <div class="admin-list-title">Danh sách doanh nghiệp cấu hình hiện tại trong hệ thống:</div>
+                <div style="max-height: 250px; overflow-y: auto; background: white; border: 1px solid #b3e5fc; border-radius: 4px;">
+                    <table style="margin-top: 0;">
+                        <thead style="position: sticky; top: 0; z-index: 10;">
+                            <tr>
+                                <th style="width: 20%;">Mã số thuế</th>
+                                <th style="width: 30%;">Tên doanh nghiệp</th>
+                                <th style="width: 35%;">Mô tả / Đường dẫn tải</th>
+                                <th style="width: 15%; text-align: center;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-db-table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div class="instruction-box">
@@ -402,7 +451,7 @@
     </footer>
 
     <script>
-        // Dữ liệu ban đầu mặc định làm mẫu (Nếu chưa có dữ liệu cấu hình mới)
+        // Dữ liệu ban đầu mặc định làm mẫu (Nếu chưa có dữ liệu cấu hình mới trong LocalStorage)
         const DỮ_LIỆU_MẪU = {
             "0101234567": {
                 tenDoanhNghiep: "Công ty Cổ phần Thương mại & Dịch vụ ABC",
@@ -411,13 +460,45 @@
             }
         };
 
-        // Hàm khởi tạo: Lấy dữ liệu giảng viên đã lưu từ LocalStorage, nếu trống thì lấy dữ liệu mẫu
+        // Hàm khởi tạo: Lấy dữ liệu giảng viên đã lưu từ LocalStorage, nếu trống thì khởi tạo bằng DỮ_LIỆU_MẪU và ghi ngược vào LocalStorage để lưu vĩnh viễn
         function layDatabase() {
             const dataSaved = localStorage.getItem("DATABASE_HOA_DON_GV");
             if (dataSaved) {
                 return JSON.parse(dataSaved);
             }
+            // Thiết lập giá trị ban đầu nếu trình duyệt chưa từng lưu gì
+            localStorage.setItem("DATABASE_HOA_DON_GV", JSON.stringify(DỮ_LIỆU_MẪU));
             return DỮ_LIỆU_MẪU;
+        }
+
+        // Cập nhật hiển thị bảng danh sách các doanh nghiệp cấu hình trong cửa sổ quản lý
+        function capNhatBangQuanLyGV() {
+            const db = layDatabase();
+            const tableBody = document.getElementById("admin-db-table-body");
+            tableBody.innerHTML = ""; // Xóa trắng bảng cũ
+
+            const keys = Object.keys(db);
+            if (keys.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">Chưa có dữ liệu hóa đơn nào trong hệ thống. Hãy thêm mới phía trên!</td></tr>`;
+                return;
+            }
+
+            keys.forEach(mst => {
+                const item = db[mst];
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><strong>${mst}</strong></td>
+                    <td>${item.tenDoanhNghiep}</td>
+                    <td>
+                        <div style="font-weight:bold; font-size:12px; color:#555;">${item.moTa}</div>
+                        <a href="${item.linkGoogleDrive}" target="_blank" style="font-size:11px; color:var(--admin-color); word-break:break-all;">${item.linkGoogleDrive}</a>
+                    </td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete" onclick="giangVienXoaData('${mst}')">Xóa [X]</button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
         }
 
         // 1. CHỨC NĂNG XÁC THỰC GIẢNG VIÊN (BẤM NÚT MÃ NHẬP PASS)
@@ -426,6 +507,7 @@
             
             if (matKhau === "DUONG") {
                 document.getElementById("admin-panel").style.display = "block";
+                capNhatBangQuanLyGV(); // Tải dữ liệu lên bảng khi mở cửa sổ
                 document.getElementById("adm-mst").focus();
             } else if (matKhau !== null) {
                 alert("Mật khẩu không chính xác! Vui lòng thử lại.");
@@ -457,8 +539,11 @@
                 linkGoogleDrive: link
             };
 
-            // Lưu ngược lại vào bộ nhớ LocalStorage của trình duyệt
+            // Lưu ngược lại vào bộ nhớ LocalStorage của trình duyệt (Dữ liệu vĩnh viễn không mất đi)
             localStorage.setItem("DATABASE_HOA_DON_GV", JSON.stringify(currentDB));
+
+            // Làm mới bảng danh sách cấu hình của GV ngay lập tức
+            capNhatBangQuanLyGV();
 
             // Hiển thị thông báo thành công và xóa trắng ô input để nhập tiếp công ty khác nếu muốn
             const toast = document.getElementById("admin-success");
@@ -469,6 +554,26 @@
             document.getElementById("adm-ten").value = "";
             document.getElementById("adm-mo-ta").value = "";
             document.getElementById("adm-link").value = "";
+        }
+
+        // CHỨC NĂNG GIẢNG VIÊN CHỦ ĐỘNG XÓA DỮ LIỆU TRÊN BẢNG
+        function giangVienXoaData(mstCanXoa) {
+            if (confirm(`Bạn có chắc chắn muốn xóa dữ liệu hóa đơn của Mã số thuế ${mstCanXoa} không?`)) {
+                let currentDB = layDatabase();
+                if (currentDB.hasOwnProperty(mstCanXoa)) {
+                    delete currentDB[mstCanXoa];
+                    // Lưu lại thay đổi vào LocalStorage
+                    localStorage.setItem("DATABASE_HOA_DON_GV", JSON.stringify(currentDB));
+                    // Cập nhật lại giao diện bảng quản lý
+                    capNhatBangQuanLyGV();
+                    
+                    // Nếu kết quả tìm kiếm của sinh viên ở dưới đang hiển thị chính MST vừa xóa, hãy ẩn đi
+                    const resMstBox = document.getElementById("res-mst");
+                    if (resMstBox && resMstBox.innerText === mstCanXoa) {
+                        document.getElementById("result-box").style.display = "none";
+                    }
+                }
+            }
         }
 
         // 3. CHỨC NĂNG TRA CỨU HÓA ĐƠN CỦA SINH VIÊN (GIỮ NGUYÊN 100% LOGIC CŨ)
@@ -510,6 +615,11 @@
                 traCuuHoaDon();
             }
         });
+
+        // Tự động nạp dữ liệu từ localStorage khi trang được load (Đảm bảo dữ liệu tồn tại vĩnh viễn)
+        window.onload = function() {
+            layDatabase();
+        };
     </script>
 </body>
 </html>
