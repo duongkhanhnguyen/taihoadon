@@ -246,6 +246,12 @@
             background-color: var(--primary-color);
         }
 
+        button:disabled {
+            background-color: #cccccc !important;
+            color: #666666 !important;
+            cursor: not-allowed;
+        }
+
         .btn-admin-save {
             background-color: var(--admin-color);
             grid-column: span 2;
@@ -255,6 +261,68 @@
 
         .btn-admin-save:hover {
             background-color: #0277bd;
+        }
+
+        /* === PHẦN BỔ SUNG: BẢNG CHẠY MÔ PHỎNG TRA CỨU === */
+        .simulation-container {
+            display: none;
+            margin-top: 25px;
+            padding: 20px;
+            border: 1px solid #ffb300;
+            background-color: #fffde7;
+            border-radius: 4px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .simulation-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #f57f17;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            background-color: #e0e0e0;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ffb300, #f57c00);
+            border-radius: 10px;
+            transition: width 0.1s linear;
+        }
+
+        .simulation-status {
+            font-size: 13px;
+            font-style: italic;
+            color: #555;
+            margin-top: 8px;
+            font-weight: bold;
+        }
+
+        .simulation-percent {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
         }
 
         /* Vùng kết quả hiển thị hóa đơn */
@@ -413,8 +481,17 @@
             </div>
             
             <div class="btn-container">
-                <button type="button" onclick="traCuuHoaDon()">Tìm kiếm & Tải về</button>
+                <button type="button" id="btn-search-trigger" onclick="traCuuHoaDon()">Tìm kiếm & Tải về</button>
             </div>
+        </div>
+
+        <div id="simulation-box" class="simulation-container">
+            <div class="simulation-title">🔄 ĐANG KẾT NỐI HỆ THỐNG CƠ SỞ DỮ LIỆU TỔNG CỤC THUẾ...</div>
+            <div class="progress-bar-bg">
+                <div id="sim-progress-fill" class="progress-bar-fill"></div>
+                <div id="sim-percent-text" class="simulation-percent">0%</div>
+            </div>
+            <div id="sim-status-text" class="simulation-status">Khởi tạo yêu cầu kết nối truy vấn thông tin...</div>
         </div>
 
         <div id="error-box" class="error-message">
@@ -629,43 +706,102 @@
             }
         }
 
-        // 3. CHỨC NĂNG TRA CỨU HÓA ĐƠN CỦA SINH VIÊN (GIỮ NGUYÊN 100% LOGIC CŨ)
+        // 3. CHỨC NĂNG TRA CỨU HÓA ĐƠN CỦA SINH VIÊN (BỔ SUNG CHẠY MÔ PHỎNG)
         function traCuuHoaDon() {
             const mstNhap = document.getElementById("mst-input").value.trim();
             const errorBox = document.getElementById("error-box");
             const resultBox = document.getElementById("result-box");
+            const simBox = document.getElementById("simulation-box");
+            const btnSearch = document.getElementById("btn-search-trigger");
 
             if (mstNhap === "") {
                 alert("Vui lòng nhập Mã số thuế trước khi tìm kiếm!");
                 return;
             }
 
-            // Lấy dữ liệu mới nhất (gồm cả dữ liệu giảng viên vừa nhập trực tiếp)
-            const dbHienTai = layDatabase();
+            // Ẩn các khu vực hiển thị kết quả cũ
+            resultBox.style.display = "none";
+            errorBox.style.display = "none";
 
-            if (dbHienTai.hasOwnProperty(mstNhap)) {
-                const data = dbHienTai[mstNhap];
+            // Vô hiệu hóa nút tìm kiếm để tránh nhấn lặp lại trong khi tải
+            btnSearch.disabled = true;
+            btnSearch.innerText = "Đang xử lý...";
 
-                document.getElementById("res-ten-dn").innerText = data.tenDoanhNghiep;
-                document.getElementById("res-mst").innerText = mstNhap;
-                document.getElementById("res-mo-ta").innerText = data.moTa;
-                
-                const downloadLink = document.getElementById("res-link");
-                downloadLink.href = data.linkGoogleDrive;
+            // Hiển thị hộp chạy mô phỏng
+            simBox.style.display = "block";
 
-                resultBox.style.display = "block";
-                errorBox.style.display = "none";
-            } else {
-                resultBox.style.display = "none";
-                errorBox.style.display = "block";
-            }
+            // Cấu hình các giai đoạn của thanh tiến trình mô phỏng
+            const progressFill = document.getElementById("sim-progress-fill");
+            const percentText = document.getElementById("sim-percent-text");
+            const statusText = document.getElementById("sim-status-text");
+
+            let progress = 0;
+            progressFill.style.width = "0%";
+            percentText.innerText = "0%";
+            statusText.innerText = "Đang gửi yêu cầu tra cứu tới Tổng cục Thuế...";
+
+            // Thay đổi trạng thái mô phỏng theo tiến trình thời gian
+            const statusMsgs = [
+                { limit: 20, text: "Đang kết nối đến Cổng thông tin Hóa đơn Điện tử..." },
+                { limit: 45, text: "Xác thực cấu trúc định dạng Mã số thuế..." },
+                { limit: 70, text: "Đang kiểm tra và truy vấn Cơ sở dữ liệu ngành..." },
+                { limit: 90, text: "Đang tổng hợp thông tin tệp tin hóa đơn..." },
+                { limit: 100, text: "Hoàn tất! Đang kết xuất dữ liệu..." }
+            ];
+
+            const intervalTime = 18; // Tổng thời gian chạy khoảng ~1.8 giây (100 * 18ms)
+            const timer = setInterval(() => {
+                progress++;
+                progressFill.style.width = progress + "%";
+                percentText.innerText = progress + "%";
+
+                // Tìm dòng trạng thái tương ứng với phần trăm hiện tại
+                const currentStatus = statusMsgs.find(msg => progress <= msg.limit);
+                if (currentStatus) {
+                    statusText.innerText = currentStatus.text;
+                }
+
+                if (progress >= 100) {
+                    clearInterval(timer);
+                    
+                    // Trả lại trạng thái bình thường cho nút bấm sau khi chạy xong
+                    btnSearch.disabled = false;
+                    btnSearch.innerText = "Tìm kiếm & Tải về";
+                    
+                    // Ẩn hộp mô phỏng chạy tiến trình
+                    simBox.style.display = "none";
+
+                    // Thực thi logic kiểm tra dữ liệu gốc của bạn
+                    const dbHienTai = layDatabase();
+
+                    if (dbHienTai.hasOwnProperty(mstNhap)) {
+                        const data = dbHienTai[mstNhap];
+
+                        document.getElementById("res-ten-dn").innerText = data.tenDoanhNghiep;
+                        document.getElementById("res-mst").innerText = mstNhap;
+                        document.getElementById("res-mo-ta").innerText = data.moTa;
+                        
+                        const downloadLink = document.getElementById("res-link");
+                        downloadLink.href = data.linkGoogleDrive;
+
+                        resultBox.style.display = "block";
+                        errorBox.style.display = "none";
+                    } else {
+                        resultBox.style.display = "none";
+                        errorBox.style.display = "block";
+                    }
+                }
+            }, intervalTime);
         }
         
         // Hỗ trợ nhấn Enter trong ô tìm kiếm sinh viên
         document.getElementById("mst-input").addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
                 event.preventDefault();
-                traCuuHoaDon();
+                // Chỉ kích hoạt tìm kiếm nếu nút bấm không bị vô hiệu hóa (không trong quá trình mô phỏng)
+                if (!document.getElementById("btn-search-trigger").disabled) {
+                    traCuuHoaDon();
+                }
             }
         });
 
